@@ -26,6 +26,7 @@ zinit light-mode depth"1" for \
 ### End of Zinit's installer chunk
 
 # Oh My Zsh
+# Git alias: https://github.com/ohmyzsh/ohmyzsh/blob/master/plugins/git/git.plugin.zsh
 zinit for \
       OMZL::correction.zsh \
       OMZL::directories.zsh \
@@ -296,15 +297,6 @@ fi
 
  # Git
  alias gtr='git tag -d $(git tag) && git fetch --tags' # Refresh local tags from remote
-
- # Emacs
- alias me="emacs -Q -l $EMACSD/init-mini.el" # mini emacs
- alias mte="emacs -Q -nw -l $EMACSD/init-mini.el" # mini terminal emacs
- alias e="$EDITOR -n"
- alias ec="$EDITOR -n -c"
- alias ef="$EDITOR -c"
- alias te="$EDITOR -nw"
- alias rte="$EDITOR -e '(let ((last-nonmenu-event nil) (kill-emacs-query-functions nil)) (save-buffers-kill-emacs t))' && te"
 
  # Upgrade
  alias upgrade_repo='git pull --rebase --stat origin master'
