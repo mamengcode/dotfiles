@@ -2,7 +2,7 @@
 
 # vars
 DOTFILES=$HOME/.dotfiles
-EMACSD=$HOME/.emacs.d
+export EDITOR=vim
 
 ### Added by Zinit's installer
 if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
