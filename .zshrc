@@ -3,6 +3,7 @@
 # vars
 DOTFILES=$HOME/.dotfiles
 export EDITOR=vim
+export GIT_EDITOR=vim
 
 ### Added by Zinit's installer
 if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
