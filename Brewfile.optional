@@ -1,0 +1,48 @@
+# Optional, machine-specific applications and project tools captured from the
+# original workstation. Install explicitly with: ./bootstrap.sh --with-optional
+
+tap "anomalyco/tap"
+tap "knightynite/g9-helper"
+
+brew "anomalyco/tap/opencode", trusted: true
+brew "cloudflared"
+brew "fish"
+brew "herdr"
+brew "node"
+brew "ollama"
+brew "r"
+
+cask "1password"
+cask "appcleaner"
+cask "betterdisplay"
+cask "coconutbattery"
+cask "codex"
+cask "dropbox"
+cask "knightynite/g9-helper/g9-helper", trusted: true
+cask "iina"
+cask "iterm2"
+cask "linearmouse"
+cask "raycast"
+cask "rstudio"
+cask "selfcontrol"
+cask "skim"
+cask "spotify"
+cask "visual-studio-code"
+cask "warp"
+cask "wezterm"
+cask "zotero"
+
+vscode "davidanson.vscode-markdownlint"
+vscode "eamodio.gitlens"
+vscode "google.geminicodeassist"
+vscode "kevinrose.vsc-python-indent"
+vscode "mechatroner.rainbow-csv"
+vscode "mgesbert.python-path"
+vscode "ms-python.debugpy"
+vscode "ms-python.python"
+vscode "ms-python.vscode-pylance"
+vscode "ms-python.vscode-python-envs"
+vscode "nsarrazin.pep723-uv-interpreter"
+
+npm "@earendil-works/pi-coding-agent"
+npm "@waishnav/devspace"

@@ -24,8 +24,10 @@ contain private keys, credentials, shell history, logs, or unrelated
 - `dot_config/mise/config.toml` → `~/.config/mise/config.toml`, with global
   `node = "lts"` and `python = "3.13"` defaults.
 
-Other files in `~/.config` are not managed or overwritten. `.chezmoiignore`
-keeps repository documentation, metadata, and the Homebrew snapshot out of the
+Other files in `~/.config` are not managed or overwritten. Bootstrap creates a
+machine-local `~/.config/chezmoi/chezmoi.toml` pointing at this checkout when it
+is absent; that file is intentionally not tracked. `.chezmoiignore` keeps
+repository documentation, metadata, and Homebrew bundles out of the
 home-directory target when chezmoi applies this repository.
 
 ## Bootstrap
@@ -33,18 +35,21 @@ home-directory target when chezmoi applies this repository.
 From a manually checked-out copy of this repository:
 
 ```sh
-./bootstrap.sh
+./bootstrap.sh                 # core CLI/build setup only
+./bootstrap.sh --with-optional # also install captured apps and project tools
 ```
 
-The script installs Homebrew only if it is absent, runs `brew bundle` without
-cleanup, and applies the chezmoi source. It never runs `gh auth login`, performs
-service authentication, removes packages, or migrates npm globals.
+The script installs Homebrew only if it is absent, runs the core `Brewfile`
+without cleanup, applies the chezmoi source, and installs the configured mise
+runtimes. Optional applications, VS Code extensions, project tools, and npm
+packages are isolated in `Brewfile.optional` and require explicit opt-in. It
+never runs `gh auth login`, performs service authentication, removes packages,
+or migrates npm globals. Modified managed files are not force-overwritten.
 
-`Brewfile` is an installed-state snapshot generated after setup. It includes
-existing formulae, casks, taps, VS Code extensions, and npm package names so a
-future `brew bundle` can reproduce that state; it is not a request to remove
-anything missing from another machine. Homebrew's `pkgconf` formula provides
-the `pkg-config` command.
+`Brewfile` is the portable shared CLI/build baseline. `Brewfile.optional` is a
+snapshot of this machine's personal GUI and project-specific state; review it
+before using it on another machine. Homebrew's `pkgconf` formula provides the
+`pkg-config` command.
 
 ## Safe setup notes
 
@@ -59,8 +64,11 @@ the `pkg-config` command.
   Node LTS and Python 3.13 versions under mise's own data directory; existing
   Homebrew npm globals were not migrated or removed. A project can use a local
   mise configuration when it needs a different runtime.
+- Run `chezmoi diff`, `chezmoi status`, and `chezmoi apply` normally after
+  bootstrap; the machine-local config points them at this checkout. SSH uses
+  chezmoi's `private_` naming so restrictive permissions are preserved.
 - If GitHub CLI access is later needed, authenticate separately and manually
   with `gh auth login`; no authentication was attempted by this setup.
-- `brew bundle check` may report the installed `node` formula and `codex` cask
-  as needing updates because the snapshot reflects the current machine. They
-  were intentionally not upgraded; `bootstrap.sh` uses `--no-upgrade`.
+- `brew bundle check` should be run with `--no-upgrade` for this setup. The
+  optional bundle reflects this machine's current apps and may require review
+  before use elsewhere; bootstrap intentionally uses `--no-upgrade`.
