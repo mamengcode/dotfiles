@@ -1,8 +1,8 @@
 # macOS software-engineering workstation
 
 This repository is a small, non-authenticated workstation setup for Apple
-Silicon macOS. It is intentionally limited to shell, prompt, SSH host
-configuration, mise defaults, and a Homebrew state snapshot. It does **not**
+Silicon macOS. It is intentionally limited to shell, prompt, Git, SSH host configuration,
+tmux, mise defaults, and a Homebrew state snapshot. It does **not**
 contain private keys, credentials, shell history, logs, or unrelated
 `~/.config` directories.
 
@@ -15,8 +15,9 @@ contain private keys, credentials, shell history, logs, or unrelated
   include for the untracked `~/.gitconfig.local` identity file.
 - `dot_gitconfig.local.example` → `~/.gitconfig.local.example`: placeholder
   identity and work/personal include examples; copy and edit it manually.
-- `dot_ssh/config` → `~/.ssh/config`: GitHub uses the existing
-  `~/.ssh/id_ed25519`; the key itself is not tracked.
+- `private_dot_ssh/private_config` → `~/.ssh/config`: the `private_` prefixes
+  preserve restrictive 0700/0600 permissions; GitHub uses the existing
+  `~/.ssh/id_ed25519`, and the key itself is not tracked.
 - `dot_tmux.conf` → `~/.tmux.conf`: conservative mouse, history, and indexing
   defaults.
 - `dot_config/starship.toml` → `~/.config/starship.toml`.
