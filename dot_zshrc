@@ -1,4 +1,8 @@
 # Keep interactive shell state in the home directory.
+export EDITOR="${EDITOR:-nvim}"
+export VISUAL="${VISUAL:-$EDITOR}"
+export PAGER="${PAGER:-less}"
+
 HISTFILE="${ZDOTDIR:-$HOME}/.zsh_history"
 HISTSIZE=10000
 SAVEHIST=10000
@@ -20,7 +24,9 @@ fi
 
 # Interactive integrations are guarded so the shell remains usable if a tool is
 # temporarily unavailable.
-if command -v fzf >/dev/null 2>&1; then
+# fzf's widget definitions require an actual interactive terminal; guarding
+# them also keeps `zsh -i -c` and automation free of zle startup errors.
+if command -v fzf >/dev/null 2>&1 && [[ -o interactive && -t 0 && -t 1 ]]; then
   eval "$(fzf --zsh)"
 fi
 

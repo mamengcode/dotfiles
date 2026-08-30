@@ -1,0 +1,11 @@
+# Copy this file to ~/.gitconfig.local and replace the placeholders.
+# Keep real identity data out of ~/dotfiles.
+[user]
+	name = Your Name
+	email = you@example.com
+
+# For separate identities, use conditional includes in ~/.gitconfig.local:
+# [includeIf "gitdir:~/src/work/"]
+#     path = ~/.gitconfig-work
+# [includeIf "gitdir:~/src/personal/"]
+#     path = ~/.gitconfig-personal

@@ -41,6 +41,7 @@ fi
 chezmoi --source="$repo_dir" --destination="$HOME" apply --force
 
 # Chezmoi's portable default mode is not sufficient for SSH configuration.
+chmod 700 "$HOME/.ssh"
 chmod 600 "$HOME/.ssh/config"
 
 echo "Bootstrap complete. No service authentication was performed."

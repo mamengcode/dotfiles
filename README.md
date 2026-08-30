@@ -11,8 +11,14 @@ contain private keys, credentials, shell history, logs, or unrelated
 - `dot_zprofile` → `~/.zprofile`: native `/opt/homebrew` PATH and zsh completions.
 - `dot_zshrc` → `~/.zshrc`: cached completion, history, fzf, zoxide, Starship,
   Atuin, mise, direnv, aliases, and optional Homebrew zsh plugins.
+- `dot_gitconfig` → `~/.gitconfig`: editor, Delta, safe Git defaults, and an
+  include for the untracked `~/.gitconfig.local` identity file.
+- `dot_gitconfig.local.example` → `~/.gitconfig.local.example`: placeholder
+  identity and work/personal include examples; copy and edit it manually.
 - `dot_ssh/config` → `~/.ssh/config`: GitHub uses the existing
   `~/.ssh/id_ed25519`; the key itself is not tracked.
+- `dot_tmux.conf` → `~/.tmux.conf`: conservative mouse, history, and indexing
+  defaults.
 - `dot_config/starship.toml` → `~/.config/starship.toml`.
 - `dot_config/mise/config.toml` → `~/.config/mise/config.toml`, with global
   `node = "lts"` and `python = "3.13"` defaults.
@@ -41,9 +47,11 @@ the `pkg-config` command.
 
 ## Safe setup notes
 
-- Existing settings in `~/.gitconfig` were preserved. Safe defaults were added:
-  `init.defaultBranch=main`, `pull.rebase=true`, `fetch.prune=true`, and
-  `push.autoSetupRemote=true`. `user.name` and `user.email` remain unset.
+- Existing settings in `~/.gitconfig` were preserved in the managed baseline.
+  Safe defaults are configured: `init.defaultBranch=main`,
+  `pull.rebase=true`, `fetch.prune=true`, and `push.autoSetupRemote=true`.
+  `user.name` and `user.email` remain unset until you create
+  `~/.gitconfig.local`.
 - The pre-change `.zshrc` and `.gitconfig` are in
   `~/setup-backups/20260830-000503`. No SSH private-key contents were copied.
 - Homebrew Node/Python remain installed. `mise install` installed the configured
