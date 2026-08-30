@@ -1,0 +1,17 @@
+# Minimal, information-dense prompt for a software-engineering workstation.
+add_newline = false
+
+format = "$directory$git_branch$git_status$python$nodejs$character"
+
+[directory]
+truncation_length = 3
+
+[git_branch]
+symbol = " "
+
+[git_status]
+format = "([$all_status$ahead_behind]($style) )"
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"

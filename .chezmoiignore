@@ -1,0 +1,7 @@
+# Repository metadata and documentation stay in ~/dotfiles.
+.git/
+.gitignore
+.chezmoiignore
+README.md
+Brewfile
+bootstrap.sh

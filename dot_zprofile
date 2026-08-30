@@ -1,0 +1,9 @@
+# Homebrew is installed in /opt/homebrew on Apple Silicon macOS.
+if [[ -d /opt/homebrew/bin ]]; then
+  export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:${PATH}"
+fi
+
+# Make Homebrew's zsh completions available to compinit.
+if [[ -d /opt/homebrew/share/zsh/site-functions ]]; then
+  fpath=(/opt/homebrew/share/zsh/site-functions $fpath)
+fi

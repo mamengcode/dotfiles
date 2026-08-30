@@ -1,0 +1,72 @@
+# Keep interactive shell state in the home directory.
+HISTFILE="${ZDOTDIR:-$HOME}/.zsh_history"
+HISTSIZE=10000
+SAVEHIST=10000
+setopt append_history
+setopt extended_history
+setopt hist_expire_dups_first
+setopt hist_ignore_dups
+setopt hist_reduce_blanks
+setopt inc_append_history
+setopt share_history
+
+# Use the cached completion dump when available; compinit rebuilds it otherwise.
+autoload -Uz compinit
+if [[ -f "${ZDOTDIR:-$HOME}/.zcompdump" ]]; then
+  compinit -C
+else
+  compinit
+fi
+
+# Interactive integrations are guarded so the shell remains usable if a tool is
+# temporarily unavailable.
+if command -v fzf >/dev/null 2>&1; then
+  eval "$(fzf --zsh)"
+fi
+
+if command -v zoxide >/dev/null 2>&1; then
+  eval "$(zoxide init zsh)"
+fi
+
+if command -v starship >/dev/null 2>&1; then
+  eval "$(starship init zsh)"
+fi
+
+if command -v atuin >/dev/null 2>&1; then
+  eval "$(atuin init zsh)"
+fi
+
+if command -v mise >/dev/null 2>&1; then
+  eval "$(mise activate zsh)"
+fi
+
+if command -v direnv >/dev/null 2>&1; then
+  eval "$(direnv hook zsh)"
+fi
+
+# Conservative convenience aliases.
+if command -v eza >/dev/null 2>&1; then
+  alias ll='eza -lah --group-directories-first'
+  alias la='eza -la --group-directories-first'
+fi
+if command -v bat >/dev/null 2>&1; then
+  alias cat='bat --paging=never'
+fi
+alias g='git'
+if command -v lazygit >/dev/null 2>&1; then
+  alias lg='lazygit'
+fi
+
+# Keep machine-local additions out of version control.
+if [[ -r "${ZDOTDIR:-$HOME}/.zshrc.local" ]]; then
+  source "${ZDOTDIR:-$HOME}/.zshrc.local"
+fi
+
+# These optional Homebrew plugins must be loaded after other zsh setup; syntax
+# highlighting should be the final widget/highlighter initialization.
+if [[ -r /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]]; then
+  source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+fi
+if [[ -r /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]]; then
+  source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+fi

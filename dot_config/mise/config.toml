@@ -1,0 +1,4 @@
+# Global runtime defaults; project-local mise.toml files may override these.
+[tools]
+node = "lts"
+python = "3.13"

@@ -1,0 +1,5 @@
+# GitHub SSH defaults. Private keys and known_hosts stay outside this repository.
+Host github.com
+  AddKeysToAgent yes
+  UseKeychain yes
+  IdentityFile ~/.ssh/id_ed25519
