@@ -74,7 +74,7 @@ chezmoi --source="$repo_dir" --destination="$HOME" apply
 
 # Install the configured global runtimes after their mise config is applied.
 if command -v mise >/dev/null 2>&1; then
-	mise install
+	mise -C "$repo_dir" install
 fi
 
 # Chezmoi's portable default mode is not sufficient for SSH configuration.
