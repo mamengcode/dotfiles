@@ -1,0 +1,390 @@
+#!/usr/bin/env bash
+#
+# restore_display - Save and restore macOS display arrangements using displayplacer
+#
+
+set -euo pipefail
+
+# Ensure Homebrew and standard bin directories are in PATH
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+CONFIG_DIR="${RESTORE_DISPLAY_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/restore_display}"
+PROFILES_DIR="$CONFIG_DIR/profiles"
+
+usage() {
+    cat <<EOF
+Usage: restore_display [COMMAND] [PROFILE_NAME]
+
+Manage and switch macOS display layouts using displayplacer.
+
+Commands:
+    restore_display save <name>      Save current display placement as <name>
+    restore_display restore <name>   Restore saved display placement <name>
+    restore_display <name>           Shortcut to restore placement <name>
+    restore_display list             List all saved display profiles
+    restore_display show <name>      Display command for profile <name>
+    restore_display delete <name>    Delete profile <name>
+    restore_display help             Show this help message
+
+Options:
+    -s, --save <name>        Save placement with the given name
+    -r, --restore <name>     Restore placement with the given name
+    -l, --list               List saved profiles
+    -h, --help               Show this help message
+
+Examples:
+    restore_display save work
+    restore_display restore work
+    restore_display work
+    restore_display list
+EOF
+}
+
+check_dependencies() {
+    if ! command -v displayplacer >/dev/null 2>&1; then
+        echo "Error: 'displayplacer' was not found in PATH." >&2
+        echo "Please install it with Homebrew: brew install displayplacer" >&2
+        exit 1
+    fi
+}
+
+validate_profile_name() {
+    local name="$1"
+    if [[ -z "$name" ]]; then
+        echo "Error: Profile name cannot be empty." >&2
+        exit 1
+    fi
+    if [[ "$name" =~ [/\\] ]] || [[ "$name" =~ ^\. ]]; then
+        echo "Error: Invalid profile name '$name'. Cannot contain slashes or begin with a dot." >&2
+        exit 1
+    fi
+}
+
+get_profile_file() {
+    local name="$1"
+    echo "$PROFILES_DIR/${name}.profile"
+}
+
+save_profile() {
+    local name="$1"
+    validate_profile_name "$name"
+    check_dependencies
+
+    mkdir -p "$PROFILES_DIR"
+    local profile_file
+    profile_file="$(get_profile_file "$name")"
+
+    echo "Querying current display configuration..."
+    local list_output
+    if ! list_output=$(displayplacer list 2>&1); then
+        echo "Error running displayplacer:" >&2
+        echo "$list_output" >&2
+        exit 1
+    fi
+
+    local displayplacer_cmd
+    displayplacer_cmd=$(printf "%s\n" "$list_output" | grep -E '^displayplacer ' | tail -n 1)
+
+    if [[ -z "$displayplacer_cmd" ]]; then
+        echo "Error: Could not extract display configuration command from displayplacer output." >&2
+        exit 1
+    fi
+
+    cat > "$profile_file" <<EOF
+# restore_display profile: ${name}
+# Saved at: $(date "+%Y-%m-%d %H:%M:%S")
+${displayplacer_cmd}
+EOF
+
+    echo "Successfully saved current display placement as '$name'."
+    echo "Profile stored at: $profile_file"
+}
+
+restore_profile() {
+    local name="$1"
+    validate_profile_name "$name"
+    check_dependencies
+
+    local profile_file
+    profile_file="$(get_profile_file "$name")"
+
+    if [[ ! -f "$profile_file" ]]; then
+        if [[ -f "$PROFILES_DIR/$name" ]]; then
+            profile_file="$PROFILES_DIR/$name"
+        else
+            echo "Error: Profile '$name' not found." >&2
+            echo "" >&2
+            list_profiles >&2
+            exit 1
+        fi
+    fi
+
+    local displayplacer_cmd
+    displayplacer_cmd=$(grep -E '^[[:space:]]*displayplacer ' "$profile_file" | tail -n 1)
+
+    if [[ -z "$displayplacer_cmd" ]]; then
+        echo "Error: Profile '$profile_file' is missing a valid displayplacer command." >&2
+        exit 1
+    fi
+
+    echo "Restoring display placement '$name'..."
+    if eval "$displayplacer_cmd"; then
+        echo "Display placement '$name' successfully restored."
+    else
+        echo "Error: Failed to apply display placement '$name'." >&2
+        exit 1
+    fi
+}
+
+parse_profile_displays() {
+    local cmd="$1"
+    local tokens=()
+
+    # Extract each display configuration argument (quoted strings containing id:)
+    while IFS= read -r match; do
+        [[ -n "$match" ]] && tokens+=("$match")
+    done < <(grep -oE "\"[^\"]*id:[^\"]*\"" <<< "$cmd" || true)
+
+    # Fallback in case tokens were unquoted
+    if [[ ${#tokens[@]} -eq 0 ]]; then
+        while IFS= read -r res; do
+            [[ -n "$res" ]] && tokens+=("$res")
+        done < <(grep -oE "res:[0-9]+x[0-9]+" <<< "$cmd" || true)
+    fi
+
+    local res_list=()
+    local display_lines=()
+    local idx=1
+
+    for screen in "${tokens[@]}"; do
+        local res hz origin degree enabled scaling extras=()
+        res=$(grep -oE "res:[0-9]+x[0-9]+" <<< "$screen" | cut -d: -f2 || true)
+        hz=$(grep -oE "hz:[0-9]+" <<< "$screen" | cut -d: -f2 || true)
+        origin=$(grep -oE "origin:\([-0-9]+,[-0-9]+\)" <<< "$screen" | sed "s/origin://" || true)
+        degree=$(grep -oE "degree:[0-9]+" <<< "$screen" | cut -d: -f2 || true)
+        enabled=$(grep -oE "enabled:(true|false)" <<< "$screen" | cut -d: -f2 || true)
+        scaling=$(grep -oE "scaling:(on|off)" <<< "$screen" | cut -d: -f2 || true)
+
+        if [[ "$enabled" == "false" ]]; then
+            display_lines+=("        • Display ${idx}: disabled")
+            res_list+=("disabled")
+            ((idx++))
+            continue
+        fi
+
+        local desc="${res:-unknown}"
+        res_list+=("${res:-unknown}")
+
+        if [[ -n "$hz" ]]; then
+            desc="${desc} @ ${hz}Hz"
+        fi
+
+        if [[ "$origin" == "(0,0)" ]]; then
+            extras+=("main")
+        elif [[ -n "$origin" ]]; then
+            extras+=("origin: ${origin}")
+        fi
+
+        if [[ -n "$degree" && "$degree" != "0" ]]; then
+            extras+=("rotated ${degree}°")
+        fi
+
+        if [[ "$scaling" == "on" ]]; then
+            extras+=("scaled")
+        fi
+
+        local extra_str=""
+        for item in "${extras[@]}"; do
+            if [[ -z "$extra_str" ]]; then
+                extra_str="$item"
+            else
+                extra_str="$extra_str, $item"
+            fi
+        done
+
+        if [[ -n "$extra_str" ]]; then
+            desc="${desc} (${extra_str})"
+        fi
+
+        display_lines+=("        • Display ${idx}: ${desc}")
+        ((idx++))
+    done
+
+    local res_summary=""
+    for r in "${res_list[@]}"; do
+        if [[ -z "$res_summary" ]]; then
+            res_summary="$r"
+        else
+            res_summary="$res_summary, $r"
+        fi
+    done
+
+    if [[ -n "$res_summary" ]]; then
+        echo "      Resolutions : ${res_summary}"
+    fi
+    if [[ ${#display_lines[@]} -gt 0 ]]; then
+        echo "      Displays    :"
+        for line in "${display_lines[@]}"; do
+            echo "$line"
+        done
+    fi
+}
+
+list_profiles() {
+    mkdir -p "$PROFILES_DIR"
+    echo "Saved display profiles (${PROFILES_DIR}):"
+
+    shopt -s nullglob
+    local files=("$PROFILES_DIR"/*.profile)
+    shopt -u nullglob
+
+    if [[ ${#files[@]} -eq 0 ]]; then
+        echo "  (No profiles saved yet)"
+        echo ""
+        echo "Save your current setup with: restore_display save <name>"
+        return 0
+    fi
+
+    local first=1
+    for file in "${files[@]}"; do
+        local filename
+        filename=$(basename "$file")
+        local name="${filename%.profile}"
+        local saved_date
+        saved_date=$(grep -E '^# Saved at:' "$file" 2>/dev/null | sed 's/^# Saved at:[[:space:]]*//' || echo "")
+        
+        if [[ $first -eq 0 ]]; then
+            echo ""
+        fi
+        first=0
+
+        if [[ -n "$saved_date" ]]; then
+            printf "  - %-20s (saved: %s)\n" "$name" "$saved_date"
+        else
+            printf "  - %s\n" "$name"
+        fi
+
+        local displayplacer_cmd
+        displayplacer_cmd=$(grep -E '^[[:space:]]*displayplacer ' "$file" 2>/dev/null | tail -n 1 || true)
+
+        if [[ -n "$displayplacer_cmd" ]]; then
+            parse_profile_displays "$displayplacer_cmd"
+        else
+            echo "      (no display configuration found)"
+        fi
+    done
+}
+
+show_profile() {
+    local name="$1"
+    validate_profile_name "$name"
+
+    local profile_file
+    profile_file="$(get_profile_file "$name")"
+
+    if [[ ! -f "$profile_file" ]]; then
+        if [[ -f "$PROFILES_DIR/$name" ]]; then
+            profile_file="$PROFILES_DIR/$name"
+        else
+            echo "Error: Profile '$name' not found." >&2
+            exit 1
+        fi
+    fi
+
+    cat "$profile_file"
+}
+
+delete_profile() {
+    local name="$1"
+    validate_profile_name "$name"
+
+    local profile_file
+    profile_file="$(get_profile_file "$name")"
+
+    if [[ ! -f "$profile_file" ]]; then
+        if [[ -f "$PROFILES_DIR/$name" ]]; then
+            profile_file="$PROFILES_DIR/$name"
+        else
+            echo "Error: Profile '$name' not found." >&2
+            exit 1
+        fi
+    fi
+
+    rm -f "$profile_file"
+    echo "Profile '$name' deleted."
+}
+
+main() {
+    if [[ $# -eq 0 ]]; then
+        usage
+        echo ""
+        list_profiles
+        exit 0
+    fi
+
+    case "$1" in
+        -h|--help|help)
+            usage
+            exit 0
+            ;;
+        -l|--list|list|ls)
+            list_profiles
+            exit 0
+            ;;
+        -s|--save|save)
+            if [[ $# -lt 2 ]]; then
+                echo "Error: Missing profile name to save." >&2
+                echo "Usage: restore_display save <name>" >&2
+                exit 1
+            fi
+            save_profile "$2"
+            ;;
+        -r|--restore|restore|load|apply)
+            if [[ $# -lt 2 ]]; then
+                echo "Error: Missing profile name to restore." >&2
+                echo "Usage: restore_display restore <name>" >&2
+                exit 1
+            fi
+            restore_profile "$2"
+            ;;
+        show|cat)
+            if [[ $# -lt 2 ]]; then
+                echo "Error: Missing profile name to show." >&2
+                echo "Usage: restore_display show <name>" >&2
+                exit 1
+            fi
+            show_profile "$2"
+            ;;
+        delete|rm|-d|--delete)
+            if [[ $# -lt 2 ]]; then
+                echo "Error: Missing profile name to delete." >&2
+                echo "Usage: restore_display delete <name>" >&2
+                exit 1
+            fi
+            delete_profile "$2"
+            ;;
+        *)
+            if [[ $# -eq 1 ]]; then
+                local profile_file
+                profile_file="$(get_profile_file "$1")"
+                if [[ -f "$profile_file" || -f "$PROFILES_DIR/$1" ]]; then
+                    restore_profile "$1"
+                else
+                    echo "Profile '$1' does not exist." >&2
+                    echo "" >&2
+                    echo "To save current display arrangement as '$1':" >&2
+                    echo "  restore_display save $1" >&2
+                    echo "" >&2
+                    list_profiles >&2
+                    exit 1
+                fi
+            else
+                echo "Error: Unknown arguments: $*" >&2
+                usage >&2
+                exit 1
+            fi
+            ;;
+    esac
+}
+
+main "$@"

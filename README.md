@@ -23,6 +23,11 @@ contain private keys, credentials, shell history, logs, or unrelated
 - `dot_config/starship.toml` → `~/.config/starship.toml`.
 - `dot_config/mise/config.toml` → `~/.config/mise/config.toml`, with global
   `node = "lts"` and `python = "3.13"` defaults.
+- `dot_local/bin/executable_restore_display` → `~/.local/bin/restore_display`:
+  command-line tool to save and restore macOS display arrangements via `displayplacer`.
+- `dot_config/restore_display/profiles` → `~/.config/restore_display/profiles`:
+  saved display layout profiles (e.g. `g9_pbp.profile`).
+- `dot_zshenv` → `~/.zshenv`: ensures `~/.local/bin` is on `PATH` for all zsh sessions.
 
 Other files in `~/.config` are not managed or overwritten. Bootstrap creates a
 machine-local `~/.config/chezmoi/chezmoi.toml` pointing at this checkout when it

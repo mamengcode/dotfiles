@@ -7,3 +7,11 @@ fi
 if [[ -d /opt/homebrew/share/zsh/site-functions ]]; then
   fpath=(/opt/homebrew/share/zsh/site-functions $fpath)
 fi
+
+# Ensure ~/.local/bin is on PATH
+if [[ -d "$HOME/.local/bin" ]]; then
+  case ":$PATH:" in
+    *":$HOME/.local/bin:"*) ;;
+    *) export PATH="$HOME/.local/bin:$PATH" ;;
+  esac
+fi

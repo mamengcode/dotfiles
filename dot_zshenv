@@ -1,0 +1,7 @@
+# Ensure ~/.local/bin is on PATH for all zsh sessions
+if [[ -d "$HOME/.local/bin" ]]; then
+  case ":$PATH:" in
+    *":$HOME/.local/bin:"*) ;;
+    *) export PATH="$HOME/.local/bin:$PATH" ;;
+  esac
+fi
