@@ -18,7 +18,7 @@ Usage: restore_display [COMMAND] [PROFILE_NAME]
 Manage and switch macOS display layouts using displayplacer.
 
 Commands:
-    restore_display save <name>      Save current display placement as <name>
+    restore_display save [-f] <name> Save current display placement as <name>
     restore_display restore <name>   Restore saved display placement <name>
     restore_display <name>           Shortcut to restore placement <name>
     restore_display list             List all saved display profiles
@@ -28,6 +28,7 @@ Commands:
 
 Options:
     -s, --save <name>        Save placement with the given name
+    -f, --force, -y, --yes   Overwrite existing profile without confirmation
     -r, --restore <name>     Restore placement with the given name
     -l, --list               List saved profiles
     -h, --help               Show this help message
@@ -67,12 +68,23 @@ get_profile_file() {
 
 save_profile() {
     local name="$1"
+    local force="${2:-0}"
     validate_profile_name "$name"
     check_dependencies
 
     mkdir -p "$PROFILES_DIR"
     local profile_file
     profile_file="$(get_profile_file "$name")"
+
+    if [[ ( -f "$profile_file" || -f "$PROFILES_DIR/$name" ) && "$force" -eq 0 ]]; then
+        local reply=""
+        printf "Profile '%s' already exists. Overwrite? [y/N] " "$name"
+        read -r reply || true
+        if [[ ! "$reply" =~ ^[Yy]([Ee][Ss])?$ ]]; then
+            echo "Aborted. Existing profile '$name' was not overwritten."
+            exit 0
+        fi
+    fi
 
     echo "Querying current display configuration..."
     local list_output
@@ -332,12 +344,36 @@ main() {
             exit 0
             ;;
         -s|--save|save)
-            if [[ $# -lt 2 ]]; then
+            shift
+            local force=0
+            local target_name=""
+            while [[ $# -gt 0 ]]; do
+                case "$1" in
+                    -f|--force|-y|--yes)
+                        force=1
+                        ;;
+                    -*)
+                        echo "Error: Unknown option '$1' for save." >&2
+                        echo "Usage: restore_display save [-f|--force] <name>" >&2
+                        exit 1
+                        ;;
+                    *)
+                        if [[ -n "$target_name" ]]; then
+                            echo "Error: Unexpected argument '$1'." >&2
+                            echo "Usage: restore_display save [-f|--force] <name>" >&2
+                            exit 1
+                        fi
+                        target_name="$1"
+                        ;;
+                esac
+                shift
+            done
+            if [[ -z "$target_name" ]]; then
                 echo "Error: Missing profile name to save." >&2
-                echo "Usage: restore_display save <name>" >&2
+                echo "Usage: restore_display save [-f|--force] <name>" >&2
                 exit 1
             fi
-            save_profile "$2"
+            save_profile "$target_name" "$force"
             ;;
         -r|--restore|restore|load|apply)
             if [[ $# -lt 2 ]]; then
